@@ -23,6 +23,8 @@ PREVIEW = "--preview" in sys.argv
 OUT = ROOT / ("preview" if PREVIEW else "public")
 SITE_URL = "https://territoriaprazdnika.ru"
 SITE_NAME = "Территория праздника"
+EMAIL = "svetlichok777@gmail.com"
+MAIL = f'<a href="mailto:{EMAIL}">{EMAIL}</a>'
 
 PRODUCTS = json.loads((SRC / "data" / "products.json").read_text(encoding="utf-8"))
 
@@ -115,6 +117,7 @@ def footer(depth):
     year = date.today().year
     return f"""</main>
 <footer class="site-footer">
+<div class="bunting" aria-hidden="true"></div>
 <div class="wrap">
 <div>
 <strong>Территория праздника</strong>
@@ -156,7 +159,7 @@ def card(p, depth):
 <h3>{e(p['title'])}</h3>
 <div class="meta">{e(meta)}</div>
 <p>{e(p['desc'])}</p>
-<div class="card-foot"><span class="price">{fmt_price(p['price'])}</span><span class="btn btn-sm">Подробнее</span></div>
+<div class="card-foot"><span class="price-tag">{fmt_price(p['price'])}</span><span class="btn btn-sm">Подробнее</span></div>
 </div>
 </a>"""
 
@@ -168,7 +171,7 @@ def select(name, label, options):
 
 def picker(depth, heading_tag="h2", heading="Подберём квест под ваш праздник"):
     cards = "\n".join(card(p, depth) for p in PRODUCTS)
-    return f"""<section class="section picker" id="picker" aria-labelledby="picker-title">
+    return f"""<section class="section picker confetti" id="picker" aria-labelledby="picker-title">
 <div class="wrap">
 <div class="section-head">
 <div><{heading_tag} id="picker-title">{heading}</{heading_tag}><p>Выберите параметры — подходящие квесты останутся ниже.</p></div>
@@ -193,6 +196,26 @@ def picker(depth, heading_tag="h2", heading="Подберём квест под 
 """
 
 
+ICONS = {
+    "cake": '<svg viewBox="0 0 52 52" fill="none" stroke="#2A1F3D" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 44h36M11 44V28h30v16"/><path d="M11 34c4 3 7 3 10 0s7-3 10 0 7 3 10 0"/><path d="M18 28v-7M26 28v-7M34 28v-7"/><path d="M18 17c-1.5-2 0-4 0-5 1.5 1 3 3 0 5zM26 17c-1.5-2 0-4 0-5 1.5 1 3 3 0 5zM34 17c-1.5-2 0-4 0-5 1.5 1 3 3 0 5z" fill="#F57F5F" stroke="none"/></svg>',
+    "tree": '<svg viewBox="0 0 52 52" fill="none" stroke="#2A1F3D" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M26 6l8 12h-4l8 11h-5l9 11H10l9-11h-5l8-11h-4z"/><path d="M26 40v7"/><circle cx="22" cy="24" r="1.8" fill="#F57F5F" stroke="none"/><circle cx="31" cy="31" r="1.8" fill="#F6C544" stroke="none"/><circle cx="21" cy="35" r="1.8" fill="#3DB5A6" stroke="none"/><path d="M26 2l1.2 2.6L30 5l-2.2 1.8.6 2.8L26 8.2l-2.4 1.4.6-2.8L22 5l2.8-.4z" fill="#F6C544" stroke="none"/></svg>',
+    "gift": '<svg viewBox="0 0 52 52" fill="none" stroke="#2A1F3D" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="22" width="34" height="22" rx="2"/><rect x="6" y="15" width="40" height="8" rx="2" fill="#F57F5F"/><path d="M26 15v29"/><path d="M26 15c-3-7-11-7-10-3 1 3 10 3 10 3s9 0 10-3c1-4-7-4-10 3z"/></svg>',
+    "bell": '<svg viewBox="0 0 52 52" fill="none" stroke="#2A1F3D" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 36c3-3 3-8 3-13a9 9 0 0118 0c0 5 0 10 3 13z" fill="#F6C544"/><path d="M11 36h30"/><path d="M22 40a4 4 0 008 0"/><path d="M26 8v6"/><path d="M8 18l4 2M44 18l-4 2"/></svg>',
+}
+
+OCCASIONS = f"""<section class="section" aria-labelledby="occ-title">
+<div class="wrap">
+<div class="section-head"><div><h2 id="occ-title">Какой у вас праздник?</h2><p>Выберите повод — покажем подходящие квесты.</p></div></div>
+<div class="occasions">
+<a class="occ occ-bday" href="{{KV}}?povod=bday#picker">{ICONS['cake']}<strong>День рождения</strong><span>Квест для именинника и его друзей</span><span class="go">Выбрать →</span></a>
+<a class="occ occ-ny" href="{{KV}}?povod=ny#picker">{ICONS['tree']}<strong>Новый год</strong><span>Подарки от Деда Мороза по подсказкам</span><span class="go">Выбрать →</span></a>
+<a class="occ occ-gift" href="{{KV}}?povod=gift#picker">{ICONS['gift']}<strong>Вручить подарок</strong><span>Сюрприз, который нужно найти</span><span class="go">Выбрать →</span></a>
+<a class="occ occ-sad" href="{{KV}}?povod=sad#picker">{ICONS['bell']}<strong>Детский сад</strong><span>Сценарий утренника для воспитателей</span><span class="go">Выбрать →</span></a>
+</div>
+</div>
+</section>
+"""
+
 STEPS = """<section class="section" id="how" aria-labelledby="how-title">
 <div class="wrap">
 <div class="section-head"><h2 id="how-title">Как проходит праздник</h2></div>
@@ -208,7 +231,7 @@ STEPS = """<section class="section" id="how" aria-labelledby="how-title">
 
 INSIDE = """<section class="section" style="padding-top:0" aria-labelledby="inside-title">
 <div class="wrap">
-<div class="inside">
+<div class="inside confetti">
 <div style="display:flex;flex-direction:column;gap:20px">
 <h2 id="inside-title">Что внутри каждого квеста</h2>
 <p class="lead">Всё, чтобы провести игру без импровизации в последний момент.</p>
@@ -268,23 +291,27 @@ def home():
                "Готовые квесты для детей и сценарии праздников: день рождения, Новый год, поиск подарка, утренник в детском саду. Скачайте PDF, распечатайте и проведите праздник за 15 минут подготовки.",
                "", extra=faq_jsonld())
     out += header(d)
-    out += f"""<section class="hero">
+    art = {x["slug"]: link(d, x["image"]) for x in PRODUCTS if x.get("image")}
+    out += f"""<section class="hero confetti">
 <div class="wrap">
 <div class="hero-text">
 <span class="pill">Готовые квесты — распечатай и играй</span>
-<h1>Праздник-приключение без долгой подготовки</h1>
-<p class="lead">Письмо от героя, карточки с заданиями, ответы и схема тайников — в одном файле. Вы раскладываете подсказки, а ребёнок отправляется за подарком.</p>
+<h1>Праздник-приключение <span class="accent">без долгой подготовки</span></h1>
+<p class="lead">Письмо от героя, карточки с заданиями, ответы и схема тайников — в одном файле. Вы раскладываете подсказки, а дети отправляются за подарком.</p>
 <div class="hero-actions"><a class="btn" href="{link(d, '#picker')}">Подобрать квест</a><a class="btn btn-ghost" href="#how">Как это устроено</a></div>
 <ul class="hero-facts"><li>Файл сразу после оплаты</li><li>Печать на обычном принтере</li><li>Ответы для взрослого</li></ul>
 </div>
-<div class="hero-art">
-<div class="back" aria-hidden="true"></div>
-<div class="card"><img src="{hero_img}" alt="Лисёнок Искрик с посылкой — герой квеста для детей 6–7 лет" width="600" height="750"></div>
-<div class="tag">6–7 лет · 25–40 минут</div>
+<div class="fan" aria-hidden="true">
+<figure class="f1"><img src="{art['piratskiy-klad']}" alt="" width="600" height="750"></figure>
+<figure class="f3"><img src="{art['gde-ded-moroz-spryatal-podarok']}" alt="" width="600" height="750"></figure>
+<figure class="f2"><img src="{art['lisenok-iskrik']}" alt="" width="600" height="750"></figure>
+<div class="sticker"><small>квесты</small><b>от 390 ₽</b></div>
 </div>
 </div>
 </section>
+<div class="bunting" aria-hidden="true"></div>
 """
+    out += OCCASIONS.replace("{KV}", link(d, "kvesty/"))
     out += picker(d)
     out += STEPS + INSIDE + faq()
     out += footer(d)
@@ -361,7 +388,7 @@ def product_page(p):
 <div class="story"><h2>Кому подойдёт</h2><ul class="checklist">{good}</ul>{note}</div>
 </div></section>
 {previews}
-<section class="section" style="padding-top:0"><div class="wrap"><div class="inside">
+<section class="section" style="padding-top:0"><div class="wrap"><div class="inside confetti">
 <div style="display:flex;flex-direction:column;gap:20px"><h2>Что в комплекте</h2><p class="lead">{kind} в одном PDF-файле. Можно распечатать сколько угодно раз для своих праздников.</p></div>
 <ul>{inside}</ul>
 </div></div></section>
@@ -449,18 +476,18 @@ def service_pages():
 <h2>Как получить файл</h2>
 <p>Сразу после оплаты на почту, указанную при покупке, придёт письмо со ссылкой на PDF. Обычно это занимает 1–2 минуты. Если письма нет, проверьте папку «Спам».</p>
 <h2>Если что-то пошло не так</h2>
-<p>Напишите нам на {todo('ПОЧТА')} и укажите почту, на которую оформляли заказ. Мы ответим и отправим файл вручную.</p>""")
+<p>Напишите нам на {MAIL} и укажите почту, на которую оформляли заказ. Мы ответим и отправим файл вручную.</p>""")
     text_page("oferta", "Публичная оферта", "Договор-оферта на продажу электронных файлов.",
               f"<p>Текст оферты готовится и появится до начала продаж. {todo('ДЕНЬ 4 ПЛАНА: вставить оферту')}</p>")
     text_page("politika-konfidencialnosti", "Политика конфиденциальности", "Как мы обрабатываем персональные данные.",
               f"<p>Текст политики готовится и появится до начала продаж. {todo('ДЕНЬ 4 ПЛАНА: вставить политику')}</p>")
     text_page("kontakty", "Контакты", "Как связаться с магазином «Территория праздника».",
-              f"""<p>Почта для вопросов о заказах: {todo('ПОЧТА')}</p>
+              f"""<p>Почта для вопросов о заказах: {MAIL}</p>
 <p>Продавец: {todo('ФИО, статус: самозанятая / ИП')}, ИНН {todo('ИНН')}</p>
 <p>Отвечаем в течение дня.</p>""")
     text_page("spasibo", "Спасибо за покупку!", "Заказ оплачен.",
               f"""<p>Оплата прошла. Письмо со ссылкой на PDF уже летит на вашу почту — обычно это 1–2 минуты.</p>
-<p>Не видите письма? Проверьте папку «Спам». Если его нет и там, напишите на {todo('ПОЧТА')}.</p>
+<p>Не видите письма? Проверьте папку «Спам». Если его нет и там, напишите на {MAIL}.</p>
 <p><a class="btn" href="{link(1, 'kvesty/')}">Смотреть другие квесты</a></p>""")
 
     # 404
