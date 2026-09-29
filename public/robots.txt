@@ -1,0 +1,4 @@
+User-agent: *
+Disallow: /spasibo/
+
+Sitemap: https://territoriaprazdnika.ru/sitemap.xml
