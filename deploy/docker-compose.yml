@@ -1,0 +1,28 @@
+# Сайт «Территория праздника» рядом с n8n.
+# Traefik из /opt/beget/n8n принимает запросы и выдаёт SSL-сертификат.
+services:
+  site:
+    image: nginx:1.27-alpine
+    container_name: territoriaprazdnika-site
+    restart: always
+    volumes:
+      - /opt/site/repo/public:/usr/share/nginx/html:ro
+      - /opt/site/repo/deploy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - n8n_default
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=n8n_default
+      - traefik.http.routers.tp.rule=Host(`territoriaprazdnika.ru`) || Host(`www.territoriaprazdnika.ru`)
+      - traefik.http.routers.tp.entrypoints=websecure
+      - traefik.http.routers.tp.tls=true
+      - traefik.http.routers.tp.tls.certresolver=mytlschallenge
+      - traefik.http.routers.tp.middlewares=tp-www
+      - traefik.http.middlewares.tp-www.redirectregex.regex=^https://www\.territoriaprazdnika\.ru/(.*)
+      - traefik.http.middlewares.tp-www.redirectregex.replacement=https://territoriaprazdnika.ru/$${1}
+      - traefik.http.middlewares.tp-www.redirectregex.permanent=true
+      - traefik.http.services.tp.loadbalancer.server.port=80
+
+networks:
+  n8n_default:
+    external: true
