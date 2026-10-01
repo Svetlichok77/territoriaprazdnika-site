@@ -17,7 +17,7 @@ docker exec territoriaprazdnika-site nginx -s reload >/dev/null 2>&1 || true
 
 # Автообновление: каждые 5 минут забираем свежую версию из GitHub
 CRON='*/5 * * * * git -C /opt/site/repo pull -q >/dev/null 2>&1; docker exec territoriaprazdnika-site nginx -s reload >/dev/null 2>&1'
-( crontab -l 2>/dev/null | grep -v '/opt/site/repo pull' ; echo "$CRON" ) | crontab -
+( crontab -l 2>/dev/null | grep -v '/opt/site/repo pull' || true ; echo "$CRON" ) | crontab -
 
 echo
 echo "ГОТОВО: сайт запущен."
