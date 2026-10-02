@@ -21,6 +21,19 @@ ROOT = Path(__file__).parent
 SRC = ROOT / "src"
 PREVIEW = "--preview" in sys.argv
 OUT = ROOT / ("preview" if PREVIEW else "public")
+
+METRIKA_ID = "113326765"
+METRIKA = "" if PREVIEW else f"""<!-- Yandex.Metrika counter -->
+<script type="text/javascript">
+(function(m,e,t,r,i,k,a){{m[i]=m[i]||function(){{(m[i].a=m[i].a||[]).push(arguments)}};m[i].l=1*new Date();
+for (var j = 0; j < document.scripts.length; j++) {{if (document.scripts[j].src === r) {{ return; }}}}
+k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)}})
+(window, document, "script", "https://mc.yandex.ru/metrika/tag.js?id={METRIKA_ID}", "ym");
+ym({METRIKA_ID}, "init", {{ssr:true, webvisor:true, clickmap:true, accurateTrackBounce:true, trackLinks:true}});
+</script>
+<noscript><div><img src="https://mc.yandex.ru/watch/{METRIKA_ID}" style="position:absolute; left:-9999px;" alt=""></div></noscript>
+<!-- /Yandex.Metrika counter -->
+"""
 SITE_URL = "https://territoriaprazdnika.ru"
 SITE_NAME = "Территория праздника"
 EMAIL = "svetlichok777@gmail.com"
@@ -88,7 +101,7 @@ def head(depth, title, desc, path, og_image=None, extra=""):
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Unbounded:wght@700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{link(depth, 'css/site.css')}">
-{extra}</head>
+{extra}{METRIKA}</head>
 <body>
 <a class="skip" href="#main">Перейти к содержанию</a>
 """
