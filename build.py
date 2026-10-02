@@ -459,13 +459,23 @@ def blog(posts):
     for p in posts:
         dd = 2
         path = f"blog/{p['slug']}/"
-        out = head(dd, p["title"] + " — Территория праздника", p.get("description", ""), path)
+        art = {"@context": "https://schema.org", "@type": "Article", "headline": p["title"], "description": p.get("description", ""),
+               "datePublished": p.get("date", ""), "author": {"@type": "Organization", "name": SITE_NAME},
+               "publisher": {"@type": "Organization", "name": SITE_NAME}, "mainEntityOfPage": SITE_URL + "/" + path}
+        out = head(dd, p["title"] + " — Территория праздника", p.get("description", ""), path,
+                   extra=f'<script type="application/ld+json">{json.dumps(art, ensure_ascii=False)}</script>\n')
         out += header(dd, "blog")
         out += f"""<div class="wrap"><article class="page">
 <nav class="crumbs" aria-label="Навигация"><a href="{link(dd, '')}">Главная</a> / <a href="{link(dd, 'blog/')}">Блог</a></nav>
 <h1>{e(p['title'])}</h1>
 {p['html']}
 </article></div>"""
+        slugs = [x.strip() for x in p.get("products", "").split(",") if x.strip()]
+        rel = [x for sl in slugs for x in PRODUCTS if x["slug"] == sl]
+        if rel:
+            out += f"""<section class="section" style="padding-top:8px"><div class="wrap">
+<div class="section-head"><h2>Готовые квесты по теме</h2><a href="{link(dd, 'kvesty/')}">Смотреть все</a></div>
+<div class="grid">{"".join(card(x, dd) for x in rel)}</div></div></section>"""
         out += footer(dd)
         write(path.rstrip("/"), out)
 

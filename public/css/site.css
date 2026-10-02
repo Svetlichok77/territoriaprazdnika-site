@@ -170,6 +170,15 @@ p{margin:0}
 .page h2{font-size:22px;margin:32px 0 12px}
 .page p,.page li{color:#3E3452}
 .page p+p{margin-top:12px}
+.page{padding-bottom:40px}
+.page ul,.page ol{margin:10px 0 14px 22px;display:grid;gap:8px}
+.page ul{list-style:disc}.page ol{list-style:decimal}
+.page li{line-height:1.55}
+.page ul+p,.page ol+p,.page table+p{margin-top:12px}
+.page strong{color:var(--ink)}
+.page table{width:100%;border-collapse:collapse;margin:14px 0;font-size:16px}
+.page th,.page td{text-align:left;padding:10px 12px;border-bottom:1px solid #E4DAF0}
+.page th{font-weight:700;background:var(--butter)}
 .todo{background:var(--butter);padding:0 4px;border-radius:4px}
 
 /* подвал */
