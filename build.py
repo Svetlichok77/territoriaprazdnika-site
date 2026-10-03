@@ -50,6 +50,12 @@ def url_of(p):
     return f"{p.get('section', 'kvesty')}/{p['slug']}/"
 
 e = html.escape
+import hashlib
+def _ver(rel):
+    """Короткая метка версии файла: меняется вместе с файлом, и браузер не берёт старую копию."""
+    return hashlib.md5((SRC / "static" / rel).read_bytes()).hexdigest()[:8]
+CSS_V = _ver("css/site.css")
+JS_V = _ver("js/site.js")
 
 
 # ---------- пути ----------
@@ -108,7 +114,7 @@ def head(depth, title, desc, path, og_image=None, extra=""):
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Unbounded:wght@700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="{link(depth, 'css/site.css')}">
+<link rel="stylesheet" href="{link(depth, 'css/site.css')}?v={CSS_V}">
 {extra}{METRIKA}</head>
 <body>
 <a class="skip" href="#main">Перейти к содержанию</a>
@@ -158,7 +164,7 @@ def footer(depth):
 </nav>
 </div>
 </footer>
-<script src="{link(depth, 'js/site.js')}" defer></script>
+<script src="{link(depth, 'js/site.js')}?v={JS_V}" defer></script>
 </body>
 </html>
 """
