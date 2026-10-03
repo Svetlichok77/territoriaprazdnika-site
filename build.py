@@ -39,7 +39,15 @@ SITE_NAME = "Территория праздника"
 EMAIL = "svetlichok777@gmail.com"
 MAIL = f'<a href="mailto:{EMAIL}">{EMAIL}</a>'
 
-PRODUCTS = json.loads((SRC / "data" / "products.json").read_text(encoding="utf-8"))
+ALL = json.loads((SRC / "data" / "products.json").read_text(encoding="utf-8"))
+DAILY = "igry-na-kazhdyy-den"            # раздел «Игры на каждый день»
+DAILY_NAME = "Игры на каждый день"
+PRODUCTS = [p for p in ALL if p.get("section", "kvesty") == "kvesty"]   # квесты
+BOOKS = [p for p in ALL if p.get("section") == DAILY]                   # сборники на каждый день
+
+
+def url_of(p):
+    return f"{p.get('section', 'kvesty')}/{p['slug']}/"
 
 e = html.escape
 
@@ -116,10 +124,11 @@ def header(depth, current=""):
 <a class="logo" href="{link(depth, '')}">{LOGO}<span>Территория<br>праздника</span></a>
 <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="nav" aria-label="Меню"><svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 6h16M3 11h16M3 16h16"/></svg></button>
 <nav id="nav" class="nav" aria-label="Главное меню">
-{a('kvesty/#picker', 'Подобрать квест', 'picker')}
-{a('kvesty/', 'Все квесты', 'catalog')}
+{a('kvesty/', 'Квесты', 'catalog')}
+{a(DAILY + '/', DAILY_NAME, 'daily')}
 {a('#how', 'Как это работает', 'how')}
 {a('blog/', 'Блог', 'blog')}
+<a class="btn btn-sm nav-cta" href="{link(depth, 'kvesty/#picker')}">Подобрать квест</a>
 </nav>
 </div>
 </header>
@@ -135,11 +144,12 @@ def footer(depth):
 <div class="wrap">
 <div>
 <strong>Территория праздника</strong>
-<span>Готовые квесты и сценарии праздников для печати</span>
+<span>Готовые квесты, сценарии праздников и игры с ребёнком на каждый день</span>
 <small>© {year} Территория праздника</small>
 </div>
 <nav aria-label="Нижнее меню">
 <a href="{link(depth, 'kvesty/')}">Все квесты</a>
+<a href="{link(depth, DAILY + '/')}">{DAILY_NAME}</a>
 <a href="{link(depth, 'blog/')}">Блог</a>
 <a href="{link(depth, 'oplata-i-poluchenie/')}">Оплата и получение</a>
 <a href="{link(depth, 'oferta/')}">Оферта</a>
@@ -158,15 +168,15 @@ def footer(depth):
 def cover(p, depth, big=False, title_in_cover=False):
     style = f'background:{p["cover_bg"]};color:{p["cover_ink"]}'
     if p.get("image"):
-        return f"""<div class="cover" style="{style}"><img src="{link(depth, p['image'])}" alt="Обложка квеста «{e(p['short'])}»" loading="lazy" width="600" height="750"><span class="badge">{e(p['badge'])}</span></div>"""
+        return f"""<div class="cover" style="{style}"><img src="{link(depth, p['image'])}" alt="Обложка «{e(p['short'])}»" loading="lazy" width="600" height="750"><span class="badge">{e(p['badge'])}</span></div>"""
     title = f'<div class="big">{e(p["short"])}</div>' if (big or title_in_cover) else ""
     return f"""<div class="cover" style="{style}" role="img" aria-label="Обложка «{e(p['short'])}»"><span class="badge">{e(p['badge'])}</span><span class="stamp" aria-hidden="true">{e(p['stamp'])}</span>{title}<span class="series">{e(p['series'])}</span></div>"""
 
 
 def card(p, depth):
-    href = link(depth, f"kvesty/{p['slug']}/")
+    href = link(depth, url_of(p))
     data = " ".join(f'data-{k}="{" ".join(p["f_" + k])}"' for k in ("age", "occ", "place", "group"))
-    meta = f"{p['ages']} · {p['place']} · {p['players']}"
+    meta = p.get("card_meta") or f"{p['ages']} · {p['place']} · {p['players']}"
     return f"""<a class="card-q" href="{href}" data-quest {data}>
 {cover(p, depth, title_in_cover=True)}
 <div class="card-body">
@@ -297,39 +307,181 @@ def write(path, content):
     f.write_text(content, encoding="utf-8")
 
 
+AGES = [("k35", "3–4", "года", "age-1"), ("k57", "5–7", "лет", "age-2"), ("k810", "8–10", "лет", "age-3"),
+        ("k1114", "11–14", "лет", "age-4"), ("adult", "18+", "взрослым", "age-5")]
+POPULAR = ["tayna-volshebnogo-yayca", "piratskiy-klad", "shkola-volshebnic",
+           "gde-ded-moroz-spryatal-podarok", "kto-ukral-yolku", "pobeg-iz-laboratorii"]
+ARROW = '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10h12M11 5l5 5-5 5"/></svg>'
+
+
+def night_band(depth, b, heading_tag="h2"):
+    """Тёмно-синий блок со сборником «на каждый день»."""
+    href = link(depth, url_of(b))
+    return f"""<section class="section night-wrap" aria-labelledby="night-title">
+<div class="wrap">
+<div class="night">
+<a class="night-art" href="{href}" tabindex="-1" aria-hidden="true"><img src="{link(depth, 'img/' + b['slug'] + '/cover.jpg')}" alt="" loading="lazy" width="700" height="990"></a>
+<div class="night-text">
+<span class="pill">Новинка · не на праздник, а на каждый вечер</span>
+<{heading_tag} id="night-title">{e(b['short'])} <span class="accent">ищет дорогу домой</span></{heading_tag}>
+<p class="lead">Сказка с продолжением на 30 вечеров для малыша {e(b['ages'])}. Каждый вечер — глава и пять коротких игр. Готовить ничего не нужно.</p>
+<ul class="ticks"><li>15–20 минут вдвоём</li><li>Игры из того, что есть дома</li><li>Добрые слова, дружба, чувства, смелость</li><li>Карта огоньков и диплом</li></ul>
+<div class="night-buy"><span class="price-tag">{fmt_price(b['price'])}</span><a class="btn" href="{href}">Посмотреть книжку {ARROW}</a></div>
+</div>
+</div>
+</div>
+</section>
+"""
+
+
 def home():
     d = 0
-    hero_p = PRODUCTS[0]
-    hero_img = link(d, hero_p["image"]) if hero_p.get("image") else ""
-    out = head(d, "Территория праздника — готовые квесты для детей дома, распечатать PDF",
-               "Готовые квесты для детей и сценарии праздников: день рождения, Новый год, поиск подарка, утренник в детском саду. Скачайте PDF, распечатайте и проведите праздник за 15 минут подготовки.",
+    out = head(d, "Территория праздника — готовые квесты для детей и игры с ребёнком дома, PDF",
+               "Готовые квесты для детей и сценарии праздников: день рождения, Новый год, поиск подарка, утренник в детском саду. И сказки с играми на каждый вечер. Скачайте PDF и играйте без долгой подготовки.",
                "", extra=faq_jsonld())
     out += header(d)
-    art = {x["slug"]: link(d, x["image"]) for x in PRODUCTS if x.get("image")}
+    art = {x["slug"]: link(d, x["image"]) for x in ALL if x.get("image")}
+    kv = link(d, "kvesty/")
+    book = BOOKS[0] if BOOKS else None
+    low = min(p["price"] for p in PRODUCTS)
     out += f"""<section class="hero confetti">
 <div class="wrap">
 <div class="hero-text">
-<span class="pill">Готовые квесты — распечатай и играй</span>
-<h1>Праздник-приключение <span class="accent">без долгой подготовки</span></h1>
-<p class="lead">Письмо от героя, карточки с заданиями, ответы и схема тайников — в одном файле. Вы раскладываете подсказки, а дети отправляются за подарком.</p>
-<div class="hero-actions"><a class="btn" href="{link(d, '#picker')}">Подобрать квест</a><a class="btn btn-ghost" href="#how">Как это устроено</a></div>
+<span class="pill">Скачали, распечатали — и играете</span>
+<h1>Праздники и добрые вечера <span class="accent">без долгой подготовки</span></h1>
+<p class="lead">Готовые квесты на день рождения и Новый год. И сказки с играми на каждый вечер. Всё в одном файле: задания, ответы и подсказки для взрослого.</p>
+<div class="hero-actions"><a class="btn" href="{link(d, 'kvesty/#picker')}">Подобрать квест</a><a class="btn btn-ghost" href="{link(d, DAILY + '/')}">Игры на каждый день</a></div>
 <ul class="hero-facts"><li>Файл сразу после оплаты</li><li>Печать на обычном принтере</li><li>Ответы для взрослого</li></ul>
 </div>
 <div class="fan" aria-hidden="true">
 <figure class="f1"><img src="{art['piratskiy-klad']}" alt="" width="600" height="750"></figure>
 <figure class="f3"><img src="{art['gde-ded-moroz-spryatal-podarok']}" alt="" width="600" height="750"></figure>
-<figure class="f2"><img src="{art['lisenok-iskrik']}" alt="" width="600" height="750"></figure>
-<div class="sticker"><small>квесты</small><b>от 390 ₽</b></div>
+<figure class="f2"><img src="{art.get('svetlyachok-luchik', art['lisenok-iskrik'])}" alt="" width="600" height="750"></figure>
+<div class="sticker"><small>квесты</small><b>от {low} ₽</b></div>
 </div>
 </div>
 </section>
 <div class="bunting" aria-hidden="true"></div>
 """
-    out += OCCASIONS.replace("{KV}", link(d, "kvesty/"))
-    out += picker(d)
-    out += STEPS + INSIDE + faq()
+    # два входа: праздник / каждый день
+    way2 = ""
+    if book:
+        way2 = f"""<a class="way way-daily" href="{link(d, DAILY + '/')}">
+<span class="way-tag">Новый раздел</span>
+<strong>{DAILY_NAME}</strong>
+<span class="way-desc">Сказка с продолжением и пять коротких игр на каждый вечер. Без подготовки.</span>
+<span class="way-go">Открыть раздел {ARROW}</span>
+<img class="way-hero" src="{link(d, 'img/svetlyachok-luchik/brave.png')}" alt="" loading="lazy" width="350" height="420">
+</a>"""
+    out += f"""<section class="section ways-wrap" aria-labelledby="ways-title">
+<div class="wrap">
+<div class="section-head"><div><h2 id="ways-title">Что вы ищете?</h2><p>Два раздела: для праздника и для обычного вечера.</p></div></div>
+<div class="ways">
+<a class="way way-quest" href="{kv}">
+<span class="way-tag">{len(PRODUCTS)} квестов</span>
+<strong>Квест на праздник</strong>
+<span class="way-desc">День рождения, Новый год, поиск подарка. Дети идут по подсказкам к сюрпризу.</span>
+<span class="way-go">Смотреть квесты {ARROW}</span>
+<span class="way-fan" aria-hidden="true"><img src="{art['shkola-volshebnic']}" alt="" loading="lazy" width="600" height="750"><img src="{art['tayna-volshebnogo-yayca']}" alt="" loading="lazy" width="600" height="750"></span>
+</a>
+{way2}
+</div>
+</div>
+</section>
+"""
+    # возраст
+    chips = "".join(f'<a class="age {cls}" href="{kv}?vozrast={k}#picker"><b>{n}</b><span>{t}</span></a>' for k, n, t, cls in AGES)
+    out += f"""<section class="section" style="padding-top:0" aria-labelledby="age-title">
+<div class="wrap">
+<div class="section-head"><div><h2 id="age-title">Сколько лет ребёнку?</h2><p>Нажмите на возраст — покажем подходящие квесты.</p></div></div>
+<div class="ages">{chips}</div>
+</div>
+</section>
+"""
+    out += OCCASIONS.replace("{KV}", kv).replace('class="section"', 'class="section" style="padding-top:0"', 1)
+    # популярные квесты
+    pop = [p for sl in POPULAR for p in PRODUCTS if p["slug"] == sl]
+    out += f"""<section class="section picker confetti" aria-labelledby="pop-title">
+<div class="wrap">
+<div class="section-head"><div><h2 id="pop-title">Популярные квесты</h2><p>На день рождения и на Новый год, для малышей и школьников.</p></div><a class="btn btn-ghost" href="{kv}">Все {len(PRODUCTS)} квестов {ARROW}</a></div>
+<div class="grid">
+{"".join(card(p, d) for p in pop)}
+</div>
+</div>
+</section>
+"""
+    if book:
+        out += night_band(d, book)
+    out += STEPS + INSIDE
+    posts = load_posts()[:3]
+    if posts:
+        items = "".join(f"""<a class="card-q" href="{link(d, 'blog/' + p['slug'] + '/')}"><div class="card-body"><span class="meta">{e(p.get('category', 'Идеи'))}</span><h3>{e(p['title'])}</h3><p>{e(p.get('description', ''))}</p><div class="card-foot"><span class="btn btn-sm">Читать</span></div></div></a>""" for p in posts)
+        out += f"""<section class="section" style="padding-top:0" aria-labelledby="blog-title">
+<div class="wrap">
+<div class="section-head"><div><h2 id="blog-title">Идеи для праздника</h2><p>Как провести квест дома и где спрятать подсказки.</p></div><a class="btn btn-ghost" href="{link(d, 'blog/')}">Все статьи {ARROW}</a></div>
+<div class="grid">{items}</div>
+</div>
+</section>
+"""
+    out += faq()
     out += footer(d)
     write("", out)
+
+
+def daily():
+    """Раздел «Игры на каждый день»."""
+    if not BOOKS:
+        return
+    d = 1
+    b = BOOKS[0]
+    out = head(d, "Игры с ребёнком дома на каждый день: сказки с заданиями — Территория праздника",
+               "Сказки с продолжением и короткие игры на каждый вечер: 15–20 минут вдвоём с ребёнком, без подготовки. Готовые сборники в PDF.",
+               DAILY + "/", og_image=b.get("image"))
+    out += header(d, "daily")
+    out += f"""<section class="daily-hero">
+<div class="wrap">
+<div class="daily-text">
+<span class="pill">Не на праздник, а на каждый вечер</span>
+<h1>Игры с ребёнком дома <span class="accent">на каждый день</span></h1>
+<p class="lead">Вечер, вы устали, а малыш хочет играть. Откройте книжку: там уже написано, что делать сегодня. Сказка на две минуты и пять коротких игр.</p>
+<ul class="hero-facts"><li>15–20 минут</li><li>Без подготовки</li><li>Читается с телефона</li></ul>
+</div>
+<img class="daily-art" src="{link(d, 'img/svetlyachok-luchik/hug.png')}" alt="Светлячок Лучик" width="390" height="420">
+</div>
+</section>
+<section class="section" aria-labelledby="eve-title">
+<div class="wrap">
+<div class="section-head"><h2 id="eve-title">Как проходит один вечер</h2></div>
+<ol class="steps">
+<li><div class="num"><span>01</span></div><strong>Читаем сказку</strong><p>Две минуты. Глава обрывается на самом интересном месте.</p></li>
+<li><div class="num"><span>02</span></div><strong>Играем</strong><p>Пять коротких игр: подвижная, две на смекалку, «узнаём новое» и творческая.</p></li>
+<li><div class="num"><span>03</span></div><strong>Говорим</strong><p>Одно доброе дело и один вопрос перед сном.</p></li>
+<li><div class="num"><span>04</span></div><strong>Зажигаем огонёк</strong><p>Малыш закрашивает кружок на карте. До завтра!</p></li>
+</ol>
+</div>
+</section>
+"""
+    out += night_band(d, b)
+    out += f"""<section class="section" aria-labelledby="soon-title">
+<div class="wrap">
+<div class="inside confetti">
+<div style="display:flex;flex-direction:column;gap:20px"><h2 id="soon-title">Чем это отличается от сборника игр</h2><p class="lead">Список из ста игр быстро надоедает. А сказку с продолжением ребёнок ждёт сам.</p></div>
+<ul>
+<li><strong>Одна история на месяц</strong><span>Герой, друзья и интрига на завтра</span></li>
+<li><strong>Всё по порядку</strong><span>Не нужно выбирать: открыли вечер и играете</span></li>
+<li><strong>Обычные вещи</strong><span>Носки, ложки, подушки, карандаши</span></li>
+<li><strong>Добрые привычки</strong><span>Помогать, делиться, называть свои чувства</span></li>
+</ul>
+</div>
+</div>
+</section>
+<section class="section" style="padding-top:0"><div class="wrap">
+<div class="section-head"><div><h2>А на праздник — квесты</h2><p>Для малышей 3–6 лет.</p></div><a class="btn btn-ghost" href="{link(d, 'kvesty/')}">Все квесты {ARROW}</a></div>
+<div class="grid">{"".join(card(o, d) for o in [x for x in PRODUCTS if 'k35' in x['f_age']][:3])}</div>
+</div></section>
+"""
+    out += footer(d)
+    write(DAILY, out)
 
 
 def catalog():
@@ -346,7 +498,9 @@ def catalog():
 
 def product_page(p):
     d = 2
-    path = f"kvesty/{p['slug']}/"
+    path = url_of(p)
+    is_book = p.get("section") == DAILY
+    sec_link, sec_name = (DAILY + "/", DAILY_NAME) if is_book else ("kvesty/", "Все квесты")
     og = p["image"] if p.get("image") else None
     ld = {
         "@context": "https://schema.org", "@type": "Product", "name": p["title"],
@@ -358,7 +512,7 @@ def product_page(p):
         ld["image"] = SITE_URL + "/" + p["image"]
     extra = '<script type="application/ld+json">' + json.dumps(ld, ensure_ascii=False) + "</script>\n"
     out = head(d, p["seo_title"], p["seo_desc"], path, og_image=og, extra=extra)
-    out += header(d)
+    out += header(d, "daily" if is_book else "")
 
     if p.get("pay_url"):
         buy = f'<a class="btn" href="{e(p["pay_url"])}">Купить за {fmt_price(p["price"])}</a>'
@@ -366,7 +520,7 @@ def product_page(p):
         buy = f'<a class="btn" aria-disabled="true" role="link">Оплата скоро</a>'
     kind = "Сценарий" if "sad" in p["f_place"] else "Квест"
     tasks_label = "Игры" if "sad" in p["f_place"] else "Заданий"
-    facts = [("Возраст", p["ages"]), ("Участники", p["players"]), (tasks_label, str(p["tasks"])),
+    facts = p.get("facts") or [("Возраст", p["ages"]), ("Участники", p["players"]), (tasks_label, str(p["tasks"])),
              ("Страниц в PDF", str(p["pages"])), ("Игра", p["play_time"]), ("Подготовка", p["prep_time"])]
     facts_html = "".join(f"<li><span>{e(k)}</span><strong>{e(v)}</strong></li>" for k, v in facts)
     story = "".join(f"<p>{e(s)}</p>" for s in p["story"])
@@ -375,16 +529,20 @@ def product_page(p):
     note = f'<p class="notice">{e(p["note"])}</p>' if p.get("note") else ""
     previews = ""
     if p.get("previews"):
-        figs = "".join(f'<figure><img src="{link(d, src)}" alt="Страница квеста «{e(p["short"])}», образец" loading="lazy" width="700" height="990"></figure>' for src in p["previews"])
+        figs = "".join(f'<figure><img src="{link(d, src)}" alt="Страница «{e(p["short"])}», образец" loading="lazy" width="700" height="990"></figure>' for src in p["previews"])
         previews = f"""<section class="section" style="padding-top:0" aria-labelledby="pv-title"><div class="wrap">
 <div class="section-head"><h2 id="pv-title">Как выглядят страницы</h2></div>
 <div class="previews">{figs}</div>
 </div></section>"""
-    others = [o for o in PRODUCTS if o["slug"] != p["slug"]][:3]
+    others = [o for o in PRODUCTS if o["slug"] != p["slug"] and (not is_book or "k35" in o["f_age"])][:3]
+    story_title = p.get("story_title") or ("Как проходит " + ("праздник" if kind == "Сценарий" else "квест"))
+    inside_lead = p.get("inside_lead") or f"{kind} в одном PDF-файле. Можно распечатать сколько угодно раз для своих праздников."
+    buy_note = p.get("buy_note") or "PDF-файл придёт на почту сразу после оплаты. Печать на обычном принтере А4."
+    faq_items = [tuple(x) for x in p["faq"]] if p.get("faq") else FAQ_ITEMS
     others_html = "\n".join(card(o, d) for o in others)
 
     out += f"""<div class="wrap">
-<nav class="crumbs" aria-label="Навигация"><a href="{link(d, '')}">Главная</a> / <a href="{link(d, 'kvesty/')}">Все квесты</a> / {e(p['short'])}</nav>
+<nav class="crumbs" aria-label="Навигация"><a href="{link(d, '')}">Главная</a> / <a href="{link(d, sec_link)}">{sec_name}</a> / {e(p['short'])}</nav>
 <div class="product">
 {cover(p, d, big=True)}
 <div class="buy">
@@ -393,23 +551,23 @@ def product_page(p):
 <p class="lead">{e(p['lead'])}</p>
 <ul class="facts">{facts_html}</ul>
 <div class="buy-box"><span class="price">{fmt_price(p['price'])}</span>{buy}</div>
-<p class="buy-note">PDF-файл придёт на почту сразу после оплаты. Печать на обычном принтере А4.</p>
+<p class="buy-note">{e(buy_note)}</p>
 </div>
 </div>
 </div>
 <section class="section" style="padding-top:0"><div class="wrap two-col">
-<div class="story"><h2>Как проходит {"праздник" if kind == "Сценарий" else "квест"}</h2>{story}</div>
+<div class="story"><h2>{e(story_title)}</h2>{story}</div>
 <div class="story"><h2>Кому подойдёт</h2><ul class="checklist">{good}</ul>{note}</div>
 </div></section>
 {previews}
 <section class="section" style="padding-top:0"><div class="wrap"><div class="inside confetti">
-<div style="display:flex;flex-direction:column;gap:20px"><h2>Что в комплекте</h2><p class="lead">{kind} в одном PDF-файле. Можно распечатать сколько угодно раз для своих праздников.</p></div>
+<div style="display:flex;flex-direction:column;gap:20px"><h2>Что в комплекте</h2><p class="lead">{e(inside_lead)}</p></div>
 <ul>{inside}</ul>
 </div></div></section>
 """
-    out += faq()
+    out += faq(faq_items)
     out += f"""<section class="section" style="padding-top:0"><div class="wrap">
-<div class="section-head"><h2>Другие квесты</h2><a href="{link(d, 'kvesty/')}">Смотреть все</a></div>
+<div class="section-head"><h2>{"Квесты для малышей на праздник" if is_book else "Другие квесты"}</h2><a href="{link(d, 'kvesty/')}">Смотреть все</a></div>
 <div class="grid">{others_html}</div>
 </div></section>
 """
@@ -471,7 +629,7 @@ def blog(posts):
 {p['html']}
 </article></div>"""
         slugs = [x.strip() for x in p.get("products", "").split(",") if x.strip()]
-        rel = [x for sl in slugs for x in PRODUCTS if x["slug"] == sl]
+        rel = [x for sl in slugs for x in ALL if x["slug"] == sl]
         if rel:
             out += f"""<section class="section" style="padding-top:8px"><div class="wrap">
 <div class="section-head"><h2>Готовые квесты по теме</h2><a href="{link(dd, 'kvesty/')}">Смотреть все</a></div>
@@ -526,7 +684,7 @@ def service_pages():
 
 
 def seo_files(posts):
-    urls = ["", "kvesty/"] + [f"kvesty/{p['slug']}/" for p in PRODUCTS] + ["blog/"] + [f"blog/{p['slug']}/" for p in posts] + \
+    urls = ["", "kvesty/"] + [f"kvesty/{p['slug']}/" for p in PRODUCTS] + ([DAILY + "/"] + [url_of(b) for b in BOOKS] if BOOKS else []) + ["blog/"] + [f"blog/{p['slug']}/" for p in posts] + \
            ["oplata-i-poluchenie/", "oferta/", "politika-konfidencialnosti/", "kontakty/"]
     today = date.today().isoformat()
     body = "\n".join(f"<url><loc>{SITE_URL}/{u}</loc><lastmod>{today}</lastmod></url>" for u in urls)
@@ -542,12 +700,13 @@ def main():
     posts = load_posts()
     home()
     catalog()
-    for p in PRODUCTS:
+    daily()
+    for p in ALL:
         product_page(p)
     blog(posts)
     service_pages()
     seo_files(posts)
-    print(f"Готово: {OUT} ({len(PRODUCTS)} товаров, {len(posts)} статей)")
+    print(f"Готово: {OUT} ({len(ALL)} товаров, {len(posts)} статей)")
 
 
 if __name__ == "__main__":
