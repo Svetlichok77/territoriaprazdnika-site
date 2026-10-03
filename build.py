@@ -314,6 +314,13 @@ POPULAR = ["tayna-volshebnogo-yayca", "piratskiy-klad", "shkola-volshebnic",
 ARROW = '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10h12M11 5l5 5-5 5"/></svg>'
 
 
+def post_card(p, depth):
+    """Карточка статьи. Картинка — поле image во фронтматтере (файл в src/static/img/blog/)."""
+    pic = p.get("image", "")
+    img = f'<div class="post-pic"><img src="{link(depth, pic)}" alt="" loading="lazy" width="1200" height="675"></div>' if pic and (SRC / "static" / pic).exists() else ""
+    return f"""<a class="card-q" href="{link(depth, 'blog/' + p['slug'] + '/')}">{img}<div class="card-body"><span class="meta">{e(p.get('category', 'Идеи'))}</span><h3>{e(p['title'])}</h3><p>{e(p.get('description', ''))}</p><div class="card-foot"><span class="btn btn-sm">Читать</span></div></div></a>"""
+
+
 def night_band(depth, b, heading_tag="h2"):
     """Тёмно-синий блок со сборником «на каждый день»."""
     href = link(depth, url_of(b))
@@ -415,7 +422,7 @@ def home():
     out += STEPS + INSIDE
     posts = load_posts()[:3]
     if posts:
-        items = "".join(f"""<a class="card-q" href="{link(d, 'blog/' + p['slug'] + '/')}"><div class="card-body"><span class="meta">{e(p.get('category', 'Идеи'))}</span><h3>{e(p['title'])}</h3><p>{e(p.get('description', ''))}</p><div class="card-foot"><span class="btn btn-sm">Читать</span></div></div></a>""" for p in posts)
+        items = "".join(post_card(p, d) for p in posts)
         out += f"""<section class="section" style="padding-top:0" aria-labelledby="blog-title">
 <div class="wrap">
 <div class="section-head"><div><h2 id="blog-title">Идеи для праздника</h2><p>Как провести квест дома и где спрятать подсказки.</p></div><a class="btn btn-ghost" href="{link(d, 'blog/')}">Все статьи {ARROW}</a></div>
@@ -604,7 +611,7 @@ def blog(posts):
                "blog/")
     out += header(d, "blog")
     if posts:
-        items = "\n".join(f"""<a class="card-q" href="{link(d, 'blog/' + p['slug'] + '/')}"><div class="card-body"><span class="meta">{e(p.get('category', 'Идеи'))}</span><h3>{e(p['title'])}</h3><p>{e(p.get('description', ''))}</p><div class="card-foot"><span class="btn btn-sm">Читать</span></div></div></a>""" for p in posts)
+        items = "\n".join(post_card(p, d) for p in posts)
     else:
         items = '<div class="empty"><h3>Первые статьи скоро появятся</h3><p>Пока загляните в каталог — там уже есть готовые квесты.</p><a class="btn" href="' + link(d, 'kvesty/') + '">Смотреть квесты</a></div>'
     out += f"""<section class="section"><div class="wrap">
@@ -620,13 +627,17 @@ def blog(posts):
         art = {"@context": "https://schema.org", "@type": "Article", "headline": p["title"], "description": p.get("description", ""),
                "datePublished": p.get("date", ""), "author": {"@type": "Organization", "name": SITE_NAME},
                "publisher": {"@type": "Organization", "name": SITE_NAME}, "mainEntityOfPage": SITE_URL + "/" + path}
-        out = head(dd, p["title"] + " — Территория праздника", p.get("description", ""), path,
+        pic = p.get("image", "")
+        if pic and not (SRC / "static" / pic).exists():
+            pic = ""
+        hero_pic = f'<img class="post-hero" src="{link(dd, pic)}" alt="{e(p["title"])}" width="1200" height="675">\n' if pic else ""
+        out = head(dd, p["title"] + " — Территория праздника", p.get("description", ""), path, og_image=pic or None,
                    extra=f'<script type="application/ld+json">{json.dumps(art, ensure_ascii=False)}</script>\n')
         out += header(dd, "blog")
         out += f"""<div class="wrap"><article class="page">
 <nav class="crumbs" aria-label="Навигация"><a href="{link(dd, '')}">Главная</a> / <a href="{link(dd, 'blog/')}">Блог</a></nav>
 <h1>{e(p['title'])}</h1>
-{p['html']}
+{hero_pic}{p['html']}
 </article></div>"""
         slugs = [x.strip() for x in p.get("products", "").split(",") if x.strip()]
         rel = [x for sl in slugs for x in ALL if x["slug"] == sl]

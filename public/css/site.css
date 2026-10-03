@@ -342,3 +342,8 @@ p{margin:0}
 .daily-hero .hero-facts li::before{background:var(--gold)}
 .daily-art{justify-self:center;max-height:340px;width:auto;filter:drop-shadow(0 14px 24px rgba(0,0,0,.4))}
 @media (max-width:820px){.daily-hero .wrap{grid-template-columns:1fr}.daily-art{max-height:220px}}
+
+/* картинки статей */
+.post-hero{width:100%;height:auto;border-radius:22px;margin:0 0 28px;box-shadow:0 12px 28px rgba(42,31,61,.14)}
+.post-pic img{width:100%;aspect-ratio:16/9;object-fit:cover}
+.page a{font-weight:700}
